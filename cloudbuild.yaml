@@ -3,9 +3,9 @@ logsBucket: 'gs://bucket67ut'
 steps:
   # Step 1: Build and push database image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'us-east1-docker.pkg.dev/sukrit-singh-426716/my-repo/image:v1', './tasktfcloudbuild']
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/sukrit-singh-426716/my-repo/image:v1', './tasktfcloudbuild']
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-east1-docker.pkg.dev/sukrit-singh-426716/my-repo/image:v1']
+    args: ['push', 'us-central1-docker.pkg.dev/sukrit-singh-426716/my-repo/image:v1']
 
   #Step2:
   - name: 'hashicorp/terraform:1.0.0'
@@ -44,7 +44,7 @@ steps:
             spec:
               containers:
                 - name: web-app
-                  image: us-east1-docker.pkg.dev/sukrit-singh-426716/my-repo/image:v1
+                  image: us-central1-docker.pkg.dev/sukrit-singh-426716/my-repo/image:v1
                   ports:
                    - containerPort: 80
         ---

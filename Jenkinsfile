@@ -19,8 +19,10 @@ pipeline {
             steps {
                 script {
                     def imageTag = "us-central1-docker.pkg.dev/${PROJECT_ID}/my-repo/image:v${env.BUILD_NUMBER}"
-                    sh "docker build -t ${imageTag} ./tasktfcloudbuild"
-                    sh "docker push ${imageTag}"
+                    withCredentials([file(credentialsId: 'gcp-credentials', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                        sh "docker build -t ${imageTag} ./tasktfcloudbuild"
+                        sh "docker push ${imageTag}"
+                    }
                 }
             }
         }
@@ -35,7 +37,13 @@ pipeline {
 
         stage('Deploy to GKE') {
             steps {
-                step([$class: 'KubernetesEngineBuilder', projectId: env.PROJECT_ID, clusterName: env.CLUSTER_NAME, location: env.LOCATION, manifestPattern: 'k8s/*.yaml', credentialsId: env.CREDENTIALS_ID, verifyDeployments: true])
+                step([$class: 'KubernetesEngineBuilder', 
+                      projectId: env.PROJECT_ID, 
+                      clusterName: env.CLUSTER_NAME, 
+                      location: env.LOCATION, 
+                      manifestPattern: 'k8s/*.yaml', 
+                      credentialsId: env.CREDENTIALS_ID, 
+                      verifyDeployments: true])
             }
         }
     }

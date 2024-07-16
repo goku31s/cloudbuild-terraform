@@ -1,41 +1,48 @@
-pipeline {
-    agent any
 
+peline {
+    agent any
+    
     environment {
         PROJECT_ID = 'sukrit-singh-426716'
         CLUSTER_NAME = 'my-gke-cluster'
         LOCATION = 'us-east1'
+        ARTIFACT_REGISTRY = 'us-central1-docker.pkg.dev'
+        REPOSITORY = 'my-repo'
+        IMAGE_NAME = 'nginx-app'
         CREDENTIALS_ID = 'gcp-credentials'
     }
-
+    
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-
-        stage('Build and Push Image') {
+        
+        stage('Build Docker Image') {
             steps {
                 script {
-                    def imageTag = "us-central1-docker.pkg.dev/${PROJECT_ID}/my-repo/image:v${env.BUILD_NUMBER}"
-                    sh "docker build -t ${imageTag} ./tasktfcloudbuild"
-                    sh "docker push ${imageTag}"
+                    app = docker.build("${ARTIFACT_REGISTRY}/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:${env.BUILD_NUMBER}")
                 }
             }
         }
-
-        stage('Update Kubernetes Manifests') {
+        
+        stage('Push Docker Image') {
             steps {
                 script {
-                    sh "sed -i 's|image: .*|image: us-central1-docker.pkg.dev/${PROJECT_ID}/my-repo/image:v${env.BUILD_NUMBER}|' k8s/*.yaml"
+                    docker.withRegistry("https://${ARTIFACT_REGISTRY}", "gcr:${CREDENTIALS_ID}") {
+                        app.push("${env.BUILD_NUMBER}")
+                        app.push("latest")
+                    }
                 }
             }
         }
-
+        
         stage('Deploy to GKE') {
             steps {
-                step([$class: 'KubernetesEngineBuilder', projectId: env.PROJECT_ID, clusterName: env.CLUSTER_NAME, location: env.LOCATION, manifestPattern: 'k8s/*.yaml', credentialsId: env.CREDENTIALS_ID, verifyDeployments: true])
+                sh "gcloud container clusters get-credentials ${CLUSTER_NAME} --location ${LOCATION} --project ${PROJECT_ID}"
+                sh "kubectl apply -f kubernetes.yaml"
+                sh "kubectl set image deployment/nginx-deployment nginx=${ARTIFACT_REGISTRY}/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
             }
         }
     }

@@ -39,7 +39,7 @@ pipeline {
                         
                         // Push the Docker image
                         sh "docker push ${ARTIFACT_REGISTRY}/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                        sh "docker push ${ARTIFACT_REGISTRY}/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:latest"
+                        sh "docker push ${ARTIFACT_REGISTRY}/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
                     }
                 }
             }

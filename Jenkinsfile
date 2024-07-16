@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
     
@@ -22,7 +21,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    app = docker.build("${ARTIFACT_REGISTRY}/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:${env.BUILD_NUMBER}")
+                    sh "docker build -t ${ARTIFACT_REGISTRY}/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:${env.BUILD_NUMBER} ."
                 }
             }
         }
@@ -30,10 +29,15 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry("https://${ARTIFACT_REGISTRY}", "gcr:${CREDENTIALS_ID}") {
-                        app.push("${env.BUILD_NUMBER}")
-                        app.push("latest")
-                    }
+                    // Authenticate with Google Cloud
+                    sh "gcloud auth activate-service-account --key-file=${CREDENTIALS_ID}"
+                    
+                    // Configure Docker to use gcloud as a credential helper
+                    sh "gcloud auth configure-docker ${ARTIFACT_REGISTRY} --quiet"
+                    
+                    // Push the Docker image
+                    sh "docker push ${ARTIFACT_REGISTRY}/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    sh "docker push ${ARTIFACT_REGISTRY}/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:latest"
                 }
             }
         }
